@@ -31,30 +31,29 @@ PMFG <- function (data, binary = FALSE, weighted = TRUE,
                   na.data = c("listwise","fiml"), progBar = TRUE)
 {
     
-    if(!"RBGL" %in% rownames(installed.packages()))
-    {
+    if(!"RBGL" %in% rownames(installed.packages())){
         cat("In order to perform this function, please copy code below to install: RBGL and graph packages",sep="\n")
-        cat('source("https://bioconductor.org/biocLite.R")',sep="\n")
-        cat('biocLite("RBGL")',sep="\n")
+        cat('install.packages("BiocManager")',sep="\n")
+        cat('BiocManager::install(version = "3.14")',sep="\n")
+        cat('BiocManager::install("RBGL")',sep="\n")
     }
     
     #missing data handling
-    if(missing(na.data))
-    {
+    if(missing(na.data)){
         if(any(is.na(data)))
         {stop("Missing values were detected! Set 'na.data' argument")
         }else{na.data<-"none"}
     }else{na.data<-match.arg(na.data)}
     
-    if(na.data=="listwise")
-    {
+    if(na.data=="listwise"){
         rem<-na.action(na.omit(data))
         warning(paste(length(na.action(na.omit(data)))),
                 " rows were removed for missing data\nrow(s): ",
                 paste(na.action(na.omit(data)),collapse = ", "))
         data<-na.omit(data)
-    }else if(na.data=="fiml")
-    {data<-psych::corFiml(data)}
+    }else if(na.data=="fiml"){
+        data<-psych::corFiml(data)
+    }
     
     #corrlation matrix
     if(nrow(data)==ncol(data)){cormat<-data
@@ -148,8 +147,7 @@ PMFG <- function (data, binary = FALSE, weighted = TRUE,
         res
     }
     
-    for(ii in 1:pmin(6,nrow(ijw)))
-    {
+    for(ii in 1:pmin(6,nrow(ijw))){
         P[ijw[ii,1],ijw[ii,2]]<-ijw[ii,3]
         P[ijw[ii,2],ijw[ii,1]]<-ijw[ii,3]
     }
@@ -157,21 +155,20 @@ PMFG <- function (data, binary = FALSE, weighted = TRUE,
     E<-6
     P1<-P
     
-    if(progBar==TRUE)
-    {pb <- txtProgressBar(max=(3*(ncol(data)-2)), style = 3)}
+    if(progBar==TRUE){pb <- txtProgressBar(max=(3*(ncol(data)-2)), style = 3)}
     
-    while(E < 3*(ncol(data)-2))
-    {
+    while(E < 3*(ncol(data)-2)){
         ii<-ii+1
         P1[ijw[ii,1],ijw[ii,2]]<-ijw[ii,3]
         P1[ijw[ii,2],ijw[ii,1]]<-ijw[ii,3]
         
-        graph<-igraph::as.igraph(qgraph::qgraph(P1,DoNotPlot=TRUE))
+        graph<-suppressWarnings(
+            igraph::as.igraph(qgraph::qgraph(P1,DoNotPlot=TRUE))   
+        )
         
         g<-as_graphnel(graph)
         
-        if(RBGL::boyerMyrvoldPlanarityTest(g)==TRUE)
-        {
+        if(RBGL::boyerMyrvoldPlanarityTest(g)==TRUE){
             P<-P1
             E<-E+1
             
@@ -179,8 +176,7 @@ PMFG <- function (data, binary = FALSE, weighted = TRUE,
             {setTxtProgressBar(pb, E)}
         }else{P1<-P}
         
-        if(ii>(ncol(data)*(ncol(data)-1)/2))
-        {message("PMFG not found")}
+        if(ii>(ncol(data)*(ncol(data)-1)/2)){message("PMFG not found")}
         
     }
     if(progBar==TRUE)
